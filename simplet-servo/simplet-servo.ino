@@ -7,7 +7,7 @@
 //
 // ATTENTION, ce code a été testé sur un esp32-c3 super mini. Pas testé sur les autres boards !
 //
-#define zVERSION        "zf250625.1009"
+#define zVERSION        "zf250625.1023"
 #define zHOST           "simplet-servo"              // ATTENTION, tout en minuscule
 
 
@@ -27,7 +27,8 @@ const char* password = WIFI_PASSWORD;
 
 WebServer server(80);
 Servo myservo;
-int servoPin = 13; // Broche où le servo est connecté
+
+int servoPin = 0; // Broche où le servo est connecté
 int currentPos = 0; // Variable pour stocker la position actuelle du servo
 
 void setup() {
