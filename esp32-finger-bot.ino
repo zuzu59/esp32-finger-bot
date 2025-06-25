@@ -2,11 +2,11 @@
 // Et cerise sur le gâteau envoie la température du esp32-c3 ainsi que le compteur de loop à un swerveur mqtt !
 //
 
-#define zVERSION        "zf250625.1446"
+#define zVERSION        "zf250625.1500"
 #define zHOST           "finger-bot1"              // ATTENTION, tout en minuscule
 #define zDSLEEP         0                       // toujours à 0, pour comptabilité avec ma caisse à outils !
 
-int zDelay1Interval =   5000;              // Délais en mili secondes pour la boucle loop
+int zDelay1Interval =   15000;              // Délais en mili secondes pour la boucle loop
 
 /*
 
@@ -84,9 +84,9 @@ WebServer servoWebServer(80);
 #include <ESP32Servo.h>
 Servo myservo;
 int servoPin = 0; // Broche où le servo est connecté
-int currentPos = 0; // Variable pour stocker la position actuelle du servo
 int onPos = 70; // Variable pour stocker la position actuelle du servo
 int offPos = 30; // Variable pour stocker la position actuelle du servo
+int currentPos = offPos; // Variable pour stocker la position actuelle du servo
 
 
 // MQTT
@@ -126,11 +126,12 @@ void setup() {
 
   // Start servo
   myservo.attach(servoPin);
-
+  myservo.write(currentPos);
+  
   // Configuration des routes du serveur web
   servoWebServer.on("/", handleRoot);
-  servoWebServer.on("/set20", handleSet20);
-  servoWebServer.on("/set80", handleSet80);
+  servoWebServer.on("/setOFF", handleSetOFF);
+  servoWebServer.on("/setON", handleSetON);
   servoWebServer.begin();
   Serial.println("Serveur web démarré");
 
@@ -214,23 +215,23 @@ void handleRoot() {
   html += "</style>";
   html += "</head><body>";
   html += "<h1>Contrôle du Servo Moteur</h1>";
-  html += "<p>Version: " + String(zVERSION) + "</p>";
-  html += "<p>Position actuelle du servo: " + String(currentPos) + " degrés</p>";
-  html += "<form action='/set20'><input type='submit' value='OFF' style='padding: 15px; font-size: 18px;'></form>";
-  html += "<form action='/set80'><input type='submit' value='ON' style='padding: 15px; font-size: 18px;'></form>";
+  html += "<p>Version: " + String(zHOST) + " " + String(zVERSION) + "</p>";
+  html += "<p>Position actuelle du servo (~30=OFF, ~70=ON): " + String(currentPos) + " degrés</p>";
+  html += "<form action='/setOFF'><input type='submit' value='OFF' style='padding: 15px; font-size: 18px;'></form>";
+  html += "<form action='/setON'><input type='submit' value='ON' style='padding: 15px; font-size: 18px;'></form>";
   html += "</body></html>";
 
   servoWebServer.send(200, "text/html", html);
 }
 
-void handleSet20() {
+void handleSetOFF() {
   currentPos = offPos;
   myservo.write(currentPos);
   servoWebServer.sendHeader("Location", "/");
   servoWebServer.send(303);
 }
 
-void handleSet80() {
+void handleSetON() {
   currentPos = onPos;
   myservo.write(currentPos);
   servoWebServer.sendHeader("Location", "/");
