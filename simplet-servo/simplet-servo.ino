@@ -64,27 +64,32 @@ void loop() {
 
 void handleRoot() {
   String html = "<html><head><title>Contrôle Servo</title>";
-  html += "<meta charset='UTF-8'>"; // Spécifie le jeu de caractères UTF-8
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"; // Balise meta viewport
+  html += "<style>";
+  html += "body { font-size: 20px; text-align: center; }"; // Style CSS pour le corps du texte
+  html += "button { padding: 15px; font-size: 18px; margin: 10px; }"; // Style pour les boutons
+  html += "</style>";
   html += "</head><body>";
   html += "<h1>Contrôle du Servo Moteur</h1>";
   html += "<p>Version: " + String(zVERSION) + "</p>";
   html += "<p>Position actuelle du servo: " + String(currentPos) + " degrés</p>";
-  html += "<form action='/set20'><input type='submit' value='20 degrés'></form>";
-  html += "<form action='/set80'><input type='submit' value='80 degrés'></form>";
+  html += "<form action='/set20'><input type='submit' value='20 degrés' style='padding: 15px; font-size: 18px;'></form>";
+  html += "<form action='/set80'><input type='submit' value='80 degrés' style='padding: 15px; font-size: 18px;'></form>";
   html += "</body></html>";
 
   server.send(200, "text/html", html);
 }
 
 void handleSet20() {
-  currentPos = 20;
+  currentPos = 30;
   myservo.write(currentPos);
   server.sendHeader("Location", "/");
   server.send(303);
 }
 
 void handleSet80() {
-  currentPos = 80;
+  currentPos = 70;
   myservo.write(currentPos);
   server.sendHeader("Location", "/");
   server.send(303);

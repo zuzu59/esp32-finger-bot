@@ -1,13 +1,7 @@
-// Nouvelle version pour tester une autre façon de lire le capteur de température interne du esp32-c3
-
-// Petit thermomètre enregistreur avec deux sondes de température, une interne au esp32-c3 
-// et une externe avec un 1-wire DS18B20 avec un esp32-c3-super-mini
+// Petit robot pour bouger de A à B un servo moteur via une page web
 //
-// ATTENTION, ce code a été testé sur un esp32-c3 super mini. Pas testé sur les autres boards !
-//
-#define zVERSION        "zf250624.2334"
 
-
+#define zVERSION        "zf250625.1132"
 #define zHOST           "finger-bot1"              // ATTENTION, tout en minuscule
 #define zDSLEEP         0                       // 0 ou 1 !
 
@@ -16,14 +10,13 @@
 int zDelay1Interval =   5000;              // Délais en mili secondes pour la boucle loop
 
 /*
+
 Utilisation:
 
-Astuce:
+Simplement avec un browser web aller sur http://adrs_ip
 
-Afin d'économiser la résistance et de simplifier au maximum le câblage, 
-j'utilise la pull up interne de l'esp32-c3 comme pull up et les deux pins 
-adjacentes pour la masse et l'alimentation pour le DS18B20. Il faudra 
-donc configurer ces pins en conséquence !
+ATTENTION, ce code a été testé sur un esp32-c3 super mini. Pas testé sur les autres boards !
+
 
 Installation:
 
@@ -44,6 +37,8 @@ https://github.com/dawidchyrzynski/arduino-home-assistant
 
 Pour JSON, il faut installer cette lib:
 https://github.com/bblanchon/ArduinoJson
+
+Pour la lib du servo moteur Il faut installer ESP32Servo de Kevin Harrington et John K. Bennett
 
 Sources:
 https://www.reddit.com/r/esp32/comments/1crwakg/built_in_temperature_sensor_on_esp32c3_red_as/?rdt=63263
@@ -81,6 +76,17 @@ const int buttonPin = 9;          // the number of the pushbutton pin
 
 // OTA WEB server
 #include "otaWebServer.h"
+
+
+// Servo WEB server
+#include "servoWebServer.h"
+
+#include <ESP32Servo.h>
+Servo myservo;
+int servoPin = 0; // Broche où le servo est connecté
+int currentPos = 30; // Variable pour stocker la position actuelle du servo
+myservo.attach(servoPin);
+
 
 
 // MQTT
@@ -133,6 +139,9 @@ void setup() {
   // Start OTA server
   otaWebServer();
 
+  // Start servoWebServer
+  servoWebServer();
+
   // Connexion au MQTT
   Serial.println("\n\nConnect MQTT !\n");
   ConnectMQTT();
@@ -157,8 +166,8 @@ void setup() {
 
 void loop() {
   // Envoie toute la sauce !
-  zEnvoieTouteLaSauce();
-
+  //zEnvoieTouteLaSauce();
+  handleClient();
   // Délais non bloquant pour le sonarpulse et l'OTA
   zDelay1(zDelay1Interval);
 }

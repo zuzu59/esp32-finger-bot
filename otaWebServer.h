@@ -24,7 +24,7 @@
 #include "otaServerIndex.h"
 
 
-WebServer server(80);
+WebServer server(8080);
 
 static void otaWebServer() {
   /*use mdns for host name resolution*/
