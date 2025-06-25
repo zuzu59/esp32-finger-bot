@@ -1,12 +1,11 @@
 // Petit robot pour bouger de A à B un servo moteur via une page web
+// Et cerise sur le gâteau envoie la température du esp32-c3 ainsi que le compteur de loop à un swerveur mqtt !
 //
 
-#define zVERSION        "zf250625.1132"
+#define zVERSION        "zf250625.1446"
 #define zHOST           "finger-bot1"              // ATTENTION, tout en minuscule
-#define zDSLEEP         0                       // 0 ou 1 !
+#define zDSLEEP         0                       // toujours à 0, pour comptabilité avec ma caisse à outils !
 
-
-#define TIME_TO_SLEEP   300                 // dSleep en secondes 
 int zDelay1Interval =   5000;              // Délais en mili secondes pour la boucle loop
 
 /*
@@ -79,14 +78,15 @@ const int buttonPin = 9;          // the number of the pushbutton pin
 
 
 // Servo WEB server
-#include "servoWebServer.h"
+#include <WebServer.h>
+WebServer servoWebServer(80);
 
 #include <ESP32Servo.h>
 Servo myservo;
 int servoPin = 0; // Broche où le servo est connecté
-int currentPos = 30; // Variable pour stocker la position actuelle du servo
-myservo.attach(servoPin);
-
+int currentPos = 0; // Variable pour stocker la position actuelle du servo
+int onPos = 70; // Variable pour stocker la position actuelle du servo
+int offPos = 30; // Variable pour stocker la position actuelle du servo
 
 
 // MQTT
@@ -95,18 +95,13 @@ myservo.attach(servoPin);
 
 // Temperature sensor
 #include "zTemperature.h"
+int bootCount = 0;
 
-#if zDSLEEP == 1
-  // Deep Sleep
-  #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-  // #define TIME_TO_SLEEP  300      /* Time ESP32 will go to sleep (in seconds) */
-  RTC_DATA_ATTR int bootCount = 0;
-#endif
 
 
 void setup() {
   // Il faut lire la température tout de suite au début avant que le MCU ne puisse chauffer !
-  initDS18B20Sensor();
+  // initDS18B20Sensor();
   delay(200);
   readSensor();
 
@@ -122,16 +117,6 @@ void setup() {
   delay(3000);                          //le temps de passer sur la Serial Monitor ;-)
   Serial.println("\n\n\n\n**************************************\nCa commence !"); Serial.println(zHOST ", " zVERSION);
 
-  #if zDSLEEP == 1
-    //Increment boot number and print it every reboot
-    ++bootCount;
-    sensorValue4 = bootCount;
-    Serial.println("Boot number: " + String(bootCount));
-    // Configuration du dsleep
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-    Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
-  #endif
-
   // Start WIFI
   zStartWifi();
   sensorValue3 = WiFi.RSSI();
@@ -139,8 +124,15 @@ void setup() {
   // Start OTA server
   otaWebServer();
 
-  // Start servoWebServer
-  servoWebServer();
+  // Start servo
+  myservo.attach(servoPin);
+
+  // Configuration des routes du serveur web
+  servoWebServer.on("/", handleRoot);
+  servoWebServer.on("/set20", handleSet20);
+  servoWebServer.on("/set80", handleSet80);
+  servoWebServer.begin();
+  Serial.println("Serveur web démarré");
 
   // Connexion au MQTT
   Serial.println("\n\nConnect MQTT !\n");
@@ -153,21 +145,16 @@ void setup() {
   zEnvoieTouteLaSauce();
   Serial.println("\nC'est envoyé !\n");
 
-  #if zDSLEEP == 1
-    // Partie dsleep. On va dormir !
-    Serial.println("Going to sleep now");
-    delay(200);
-    Serial.flush(); 
-    esp_deep_sleep_start();
-    Serial.println("This will never be printed");
-  #endif
-
 }
 
 void loop() {
+
+  //Increment boot number
+  ++bootCount;
+  sensorValue4 = bootCount;
+
   // Envoie toute la sauce !
-  //zEnvoieTouteLaSauce();
-  handleClient();
+  zEnvoieTouteLaSauce();
   // Délais non bloquant pour le sonarpulse et l'OTA
   zDelay1(zDelay1Interval);
 }
@@ -202,14 +189,51 @@ void zEnvoieTouteLaSauce(){
 }
 
 
-// Délais non bloquant pour le sonarpulse et l'OTA
+// Délais non bloquant pour le sonarpulse et l'OTA et le WEB server pour le servo
 void zDelay1(long zDelayMili){
   long zDelay1NextMillis = zDelayMili + millis(); 
   while(millis() < zDelay1NextMillis ){
     // OTA loop
     server.handleClient();
+
+    // Servo WEB server loop
+    servoWebServer.handleClient();
+
     // Un petit coup sonar pulse sur la LED pour dire que tout fonctionne bien
     sonarPulse();
   }
+}
+
+void handleRoot() {
+  String html = "<html><head><title>Contrôle Servo</title>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"; // Balise meta viewport
+  html += "<style>";
+  html += "body { font-size: 20px; text-align: center; }"; // Style CSS pour le corps du texte
+  html += "button { padding: 15px; font-size: 18px; margin: 10px; }"; // Style pour les boutons
+  html += "</style>";
+  html += "</head><body>";
+  html += "<h1>Contrôle du Servo Moteur</h1>";
+  html += "<p>Version: " + String(zVERSION) + "</p>";
+  html += "<p>Position actuelle du servo: " + String(currentPos) + " degrés</p>";
+  html += "<form action='/set20'><input type='submit' value='OFF' style='padding: 15px; font-size: 18px;'></form>";
+  html += "<form action='/set80'><input type='submit' value='ON' style='padding: 15px; font-size: 18px;'></form>";
+  html += "</body></html>";
+
+  servoWebServer.send(200, "text/html", html);
+}
+
+void handleSet20() {
+  currentPos = offPos;
+  myservo.write(currentPos);
+  servoWebServer.sendHeader("Location", "/");
+  servoWebServer.send(303);
+}
+
+void handleSet80() {
+  currentPos = onPos;
+  myservo.write(currentPos);
+  servoWebServer.sendHeader("Location", "/");
+  servoWebServer.send(303);
 }
 
