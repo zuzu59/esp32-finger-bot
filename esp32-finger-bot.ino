@@ -2,7 +2,7 @@
 // Et cerise sur le gâteau envoie la température du esp32-c3 ainsi que le compteur de loop à un swerveur mqtt !
 //
 
-#define zVERSION        "zf250625.1500"
+#define zVERSION        "zf250625.1508"
 #define zHOST           "finger-bot1"              // ATTENTION, tout en minuscule
 #define zDSLEEP         0                       // toujours à 0, pour comptabilité avec ma caisse à outils !
 
@@ -127,9 +127,10 @@ void setup() {
   // Start servo
   myservo.attach(servoPin);
   myservo.write(currentPos);
-  
+
   // Configuration des routes du serveur web
   servoWebServer.on("/", handleRoot);
+  servoWebServer.on("/setCLIC", handleSetCLIC);
   servoWebServer.on("/setOFF", handleSetOFF);
   servoWebServer.on("/setON", handleSetON);
   servoWebServer.begin();
@@ -217,11 +218,22 @@ void handleRoot() {
   html += "<h1>Contrôle du Servo Moteur</h1>";
   html += "<p>Version: " + String(zHOST) + " " + String(zVERSION) + "</p>";
   html += "<p>Position actuelle du servo (~30=OFF, ~70=ON): " + String(currentPos) + " degrés</p>";
+  html += "<form action='/setCLIC'><input type='submit' value='CLIC' style='padding: 15px; font-size: 18px;'></form>";
   html += "<form action='/setOFF'><input type='submit' value='OFF' style='padding: 15px; font-size: 18px;'></form>";
   html += "<form action='/setON'><input type='submit' value='ON' style='padding: 15px; font-size: 18px;'></form>";
   html += "</body></html>";
 
   servoWebServer.send(200, "text/html", html);
+}
+
+void handleSetCLIC() {
+  currentPos = onPos;
+  myservo.write(currentPos);
+  delay(1000);                      // wait for a second
+  currentPos = offPos;
+  myservo.write(currentPos);
+  servoWebServer.sendHeader("Location", "/");
+  servoWebServer.send(303);
 }
 
 void handleSetOFF() {
