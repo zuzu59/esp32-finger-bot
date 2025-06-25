@@ -5,11 +5,8 @@
 //
 // ATTENTION, ce code a été testé sur un esp32-c3 super mini. Pas testé sur les autres boards !
 //
-#define zVERSION        "zf250625.0942"
+#define zVERSION        "zf250625.0948"
 #define zHOST           "simplet-led"              // ATTENTION, tout en minuscule
-
-#include <WiFi.h>
-#include <WebServer.h>
 
 // General
 const int ledPin = 8;             // the number of the LED pin
@@ -17,6 +14,8 @@ const int buttonPin = 9;          // the number of the pushbutton pin
 
 #include "secrets.h"
 
+#include <WiFi.h>
+#include <WebServer.h>
 
 // Remplacez par vos informations d'identification WiFi
 const char* ssid = WIFI_SSID;
