@@ -1,10 +1,12 @@
 # esp32-remote-finger
 Doigt qui appuie sur un bouton à distance
 
-zf250624.2215, zf250625.0912
+zf250624.2215, zf250626.1211
 
 ## Buts
 Simplement faire un petit robot qui avec un servo moteur appuie sur un bouton.
+
+![](https://raw.githubusercontent.com/zuzu59/esp32-finger-bot/refs/heads/master/images/ordinateur.jpeg)
 
 
 ## Problématiques
